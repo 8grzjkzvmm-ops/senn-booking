@@ -263,6 +263,21 @@
     selectedSlot = null;
   }
 
+  function inquiryButtonHtml(label) {
+    return '<button class="secondary" id="inquiryBtn" type="button">' + (label || 'それでも問い合わせる') + '</button>';
+  }
+  function wireInquiry() {
+    var btn = document.getElementById('inquiryBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      if (typeof liff !== 'undefined' && liff.isInClient && liff.isInClient()) {
+        liff.closeWindow();
+      } else {
+        alert('LINEのトーク画面から、直接メニューやご希望の日時をメッセージでお送りください。');
+      }
+    });
+  }
+
   document.getElementById('checkBtn').addEventListener('click', function () {
     var dur = totalDuration();
     var section = document.getElementById('resultSection');
@@ -284,11 +299,13 @@
     var commentHtml = comment ? '<div class="empty-note" style="background:var(--sunken); border-radius:7px; padding:9px 10px;"><strong style="color:var(--text)">ご要望：</strong>'+comment.replace(/</g,'&lt;')+'</div>' : '';
 
     if (res.closed) {
-      section.innerHTML = '<div class="status-hero ng"><div class="mark">✕</div><div class="msg">この日は定休日です</div></div>' + commentHtml;
+      section.innerHTML = '<div class="status-hero ng"><div class="mark">✕</div><div class="msg">この日は定休日です</div></div>' + commentHtml + inquiryButtonHtml();
+      wireInquiry();
       return;
     }
     if (res.candidates.length === 0) {
-      section.innerHTML = '<div class="status-hero ng"><div class="mark">✕</div><div class="msg">ご希望メニュー（'+fmtDur(dur)+'）の空きがありません</div><div class="sub">他の日をお試しください</div></div>' + commentHtml;
+      section.innerHTML = '<div class="status-hero ng"><div class="mark">✕</div><div class="msg">ご希望メニュー（'+fmtDur(dur)+'）の空きがありません</div><div class="sub">他の日をお試しいただくか、それでも調整できないかお問い合わせください</div></div>' + commentHtml + inquiryButtonHtml();
+      wireInquiry();
       return;
     }
 
@@ -302,7 +319,9 @@
     html += '<label class="field" style="margin-top:8px;">お名前<input type="text" id="custName" value="'+(lineProfile?lineProfile.displayName:'')+'" placeholder="お名前"></label>';
     html += '<button class="primary" id="confirmBtn" disabled>時間を選んでください</button>';
     html += '<div class="empty-note" id="submitNote" style="display:none;"></div>';
+    html += inquiryButtonHtml('この中に希望の時間がない場合はこちら');
     section.innerHTML = html;
+    wireInquiry();
 
     var duration = dur;
     section.querySelectorAll('.slot-btn').forEach(function (el) {
