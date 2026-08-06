@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<title>SENN 予約</title>
+<style>
+  :root {
+    --bg: #efefea; --surface: #ffffff; --sunken: #e4e2db; --sunken-line: #d0cdc2;
+    --text: #26251f; --text-muted: #85837a; --border: #d6d3c9;
+    --accent: #a9895a; --accent-text: #2a1f0f;
+    --good: #4f6a58; --good-bg: #e4ebe4; --good-border: #b9ccb9;
+    --warn: #a24f34; --warn-bg: #f3e3dc; --warn-border: #ddb7a5;
+    --radius: 10px; --shadow: 0 1px 2px rgba(38,37,31,0.06), 0 4px 14px rgba(38,37,31,0.05);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+    font-size: 15px; line-height: 1.55;
+  }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .page { max-width: 520px; margin: 0 auto; padding: 16px 16px 64px; display: flex; flex-direction: column; gap: 16px; }
+  header.top { padding: 4px 2px 10px; border-bottom: 1px solid var(--border); }
+  header.top .brand { font-size: 13px; letter-spacing: 0.14em; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+  header.top h1 { font-size: 18px; margin: 2px 0 0; font-weight: 700; }
+  section.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-muted); flex: 1; }
+  input, select, textarea {
+    font: inherit; font-size: 14.5px; color: var(--text); background: var(--sunken);
+    border: 1px solid var(--sunken-line); border-radius: 7px; padding: 9px 10px; width: 100%;
+  }
+  textarea { resize: vertical; min-height: 64px; }
+  .day-picker { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+  .day-btn { flex: 0 0 auto; min-width: 54px; padding: 8px 4px; border-radius: 9px; text-align: center; border: 1px solid var(--border); background: var(--sunken); color: var(--text); cursor: pointer; }
+  .day-btn .dow { display:block; font-size: 10.5px; color: var(--text-muted); }
+  .day-btn .d { display:block; font-size: 15px; font-weight: 700; }
+  .day-btn.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  .day-btn.active .dow { color: var(--accent-text); opacity: 0.8; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--sunken); color: var(--text); border-radius: 999px; padding: 8px 13px; font-size: 13.5px; cursor: pointer; user-select: none; }
+  .chip input { display: none; }
+  .chip .dur { color: var(--text-muted); font-size: 12px; }
+  .chip.checked { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  .chip.checked .dur { color: var(--accent-text); opacity: 0.75; }
+  .duration-readout { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-muted); }
+  .duration-readout strong { color: var(--text); font-size: 15px; }
+  button { font: inherit; cursor: pointer; border-radius: 7px; border: 1px solid transparent; }
+  button.primary { background: var(--accent); color: var(--accent-text); font-weight: 700; font-size: 15px; padding: 13px 16px; border: none; width: 100%; }
+  button.primary:disabled { opacity: 0.5; }
+  button.secondary { background: var(--sunken); color: var(--text); border: 1px solid var(--sunken-line); font-weight: 600; font-size: 14px; padding: 12px 16px; width: 100%; }
+  .slot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .slot-btn { padding: 12px 6px; border-radius: 8px; text-align: center; font-size: 14.5px; font-weight: 700; border: 1.5px solid var(--good-border); background: var(--good-bg); color: var(--good); cursor: pointer; }
+  .slot-btn.best { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--good-bg)); color: var(--text); }
+  .slot-btn.selected { outline: 2px solid var(--text); }
+  .slot-btn .tag { display:block; font-size: 10px; font-weight: 700; margin-top: 2px; opacity: 0.75; }
+  .status-hero { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 20px 16px; border-radius: var(--radius); text-align: center; }
+  .status-hero.ok { background: var(--good-bg); border: 1px solid var(--good-border); }
+  .status-hero.ng { background: var(--warn-bg); border: 1px solid var(--warn-border); }
+  .status-hero .mark { font-size: 30px; line-height: 1; }
+  .status-hero.ok .mark { color: var(--good); }
+  .status-hero.ng .mark { color: var(--warn); }
+  .status-hero .msg { font-size: 14.5px; font-weight: 700; color: var(--text); }
+  .status-hero .sub { font-size: 12.5px; color: var(--text-muted); }
+  .recommend-banner { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--good-border); background: var(--good-bg); }
+  .recommend-banner .icon { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: var(--accent-text); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; }
+  .recommend-banner .body .title { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+  .recommend-banner .body .menu { font-size: 15px; font-weight: 800; color: var(--text); }
+  .empty-note { font-size: 13.5px; color: var(--text-muted); padding: 6px 2px; }
+  .loading { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <div class="brand">SENN</div>
+    <h1>ご予約</h1>
+  </header>
+
+  <section class="card" id="recommendCard" style="display:none;"></section>
+
+  <section class="card">
+    <div class="eyebrow">日付を選ぶ</div>
+    <div class="day-picker" id="dayPicker"></div>
+  </section>
+
+  <section class="card">
+    <div class="eyebrow">ご希望のメニュー</div>
+    <div class="chips" id="menuChips"></div>
+    <div class="duration-readout"><span>合計時間</span><strong class="tabular" id="durationReadout">0分</strong></div>
+    <label class="field">ご要望・コメント（任意）
+      <textarea id="comment" placeholder="例: 前回と同じ長さで整えてください"></textarea>
+    </label>
+    <button class="primary" id="checkBtn">空き状況を確認</button>
+  </section>
+
+  <section class="card" id="resultSection" style="display:none;"></section>
+
+  <div id="debugBox" style="font-size:11px; color:#999; padding:8px; word-break:break-all;"></div>
+</div>
+
+<script>window.LIFF_ID = "2011000948-g2fSsa55";</script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+(function () {
+  var settings = null;
+  var selectedDateKey = null;
+  var selectedMenu = new Set();
+  var lineProfile = null;
+  var selectedSlot = null;
+  var dates = [];
+
+  var DOW = ["日","月","火","水","木","金","土"];
+  var API_BASE = "https://script.google.com/macros/s/AKfycbw_xRqG1rPU1ytQIqcKRLPdBCmlc5WHH_BVLmuq0gryEvycAlCdz2Enbz19a0wa0qb4/exec";
+
+  function apiGet(action, params, cb) {
+    var qs = 'action=' + encodeURIComponent(action);
+    for (var k in params) {
+      if (params[k] !== null && params[k] !== undefined) qs += '&' + k + '=' + encodeURIComponent(params[k]);
+    }
+    fetch(API_BASE + '?' + qs)
+      .then(function (r) { return r.json(); })
+      .then(cb)
+      .catch(function (err) { debugLog('apiGet error(' + action + '): ' + err); });
+  }
+
+  function apiPost(payload, onSuccess, onError) {
+    fetch(API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json(); })
+      .then(onSuccess)
+      .catch(onError);
+  }
+
+  function dateKey(d) {
+    var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+    return y + '-' + m + '-' + day;
+  }
+  function fmtDur(min) {
+    if (min <= 0) return "0分";
+    var h = Math.floor(min/60), m = min%60;
+    if (h===0) return m+"分";
+    if (m===0) return h+"時間";
+    return h+"時間"+m+"分";
+  }
+
+  function debugLog(msg) {
+    var box = document.getElementById('debugBox');
+    if (box) box.textContent += msg + ' / ';
+  }
+
+  function init() {
+    debugLog('LIFF_ID=' + window.LIFF_ID);
+    debugLog('liffLoaded=' + (typeof liff !== 'undefined'));
+    if (typeof liff !== 'undefined' && window.LIFF_ID) {
+      try {
+        debugLog('liff.init呼び出し直前');
+        var initResult = liff.init({ liffId: window.LIFF_ID });
+        debugLog('liff.init呼び出し直後 type=' + typeof initResult);
+        initResult.then(function () {
+          debugLog('liff.init OK');
+          debugLog('isLoggedIn=' + liff.isLoggedIn());
+          debugLog('isInClient=' + liff.isInClient());
+          if (liff.isLoggedIn()) {
+            liff.getProfile().then(function (profile) {
+              debugLog('profile取得OK: ' + profile.displayName);
+              lineProfile = profile;
+              var nameInput = document.getElementById('custName');
+              if (nameInput) nameInput.value = profile.displayName;
+              apiGet('recommendation', { userId: profile.userId }, renderRecommend);
+            }).catch(function(err){ debugLog('getProfile error: ' + JSON.stringify(err)); });
+          } else {
+            debugLog('未ログイン状態。liff.login()を試みます');
+            liff.login();
+          }
+        }).catch(function (err) { debugLog('LIFF init error(async): ' + JSON.stringify(err)); });
+      } catch (syncErr) {
+        debugLog('LIFF init 同期エラー: ' + syncErr.message);
+      }
+    } else {
+      debugLog('LIFF初期化スキップ（LIFF_IDまたはSDK未読込）');
+    }
+    apiGet('settings', {}, onSettingsLoaded);
+  }
+
+  function onSettingsLoaded(s) {
+    settings = s;
+    var today = new Date();
+    for (var i = 0; i <= 45; i++) {
+      var d = new Date(); d.setDate(today.getDate()+i);
+      dates.push(d);
+    }
+    selectedDateKey = dateKey(dates[0]);
+    renderDayPicker();
+    renderMenuChips();
+  }
+
+  function renderDayPicker() {
+    var wrap = document.getElementById('dayPicker');
+    wrap.innerHTML = '';
+    dates.forEach(function (d) {
+      var key = dateKey(d);
+      var btn = document.createElement('div');
+      btn.className = 'day-btn' + (key === selectedDateKey ? ' active' : '');
+      btn.innerHTML = '<span class="dow">'+DOW[d.getDay()]+'</span><span class="d">'+d.getDate()+'</span>';
+      btn.addEventListener('click', function () {
+        selectedDateKey = key;
+        renderDayPicker();
+        hideResult();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function renderMenuChips() {
+    var wrap = document.getElementById('menuChips');
+    wrap.innerHTML = '';
+    settings.menu.forEach(function (m, idx) {
+      var chip = document.createElement('label');
+      chip.className = 'chip';
+      chip.innerHTML = '<input type="checkbox" data-idx="'+idx+'"><span>'+m.name+'</span><span class="dur">'+m.min+'分</span>';
+      wrap.appendChild(chip);
+      chip.querySelector('input').addEventListener('change', function (e) {
+        var name = settings.menu[idx].name;
+        if (e.target.checked) selectedMenu.add(name); else selectedMenu.delete(name);
+        chip.classList.toggle('checked', e.target.checked);
+        updateDuration();
+      });
+    });
+  }
+
+  function totalDuration() {
+    var t = 0;
+    settings.menu.forEach(function (m) { if (selectedMenu.has(m.name)) t += m.min; });
+    return t;
+  }
+  function updateDuration() {
+    document.getElementById('durationReadout').textContent = fmtDur(totalDuration());
+  }
+
+  function renderRecommend(rec) {
+    var card = document.getElementById('recommendCard');
+    if (!rec) { card.style.display = 'none'; return; }
+    card.style.display = 'flex';
+    card.innerHTML = '<div class="recommend-banner"><div class="icon">◎</div>' +
+      '<div class="body"><div class="title">前回のご来店より</div><div class="menu">'+rec.sentence+'</div></div></div>';
+    rec.matchedMenu.forEach(function (name) {
+      var idx = settings.menu.findIndex(function(m){return m.name===name;});
+      if (idx === -1) return;
+      var input = document.querySelectorAll('#menuChips input')[idx];
+      if (input && !input.checked) { input.checked = true; input.dispatchEvent(new Event('change')); }
+    });
+  }
+
+  function hideResult() {
+    document.getElementById('resultSection').style.display = 'none';
+    selectedSlot = null;
+  }
+
+  document.getElementById('checkBtn').addEventListener('click', function () {
+    var dur = totalDuration();
+    var section = document.getElementById('resultSection');
+    if (dur === 0) {
+      section.style.display = 'block';
+      section.innerHTML = '<div class="empty-note">メニューを選択してください。</div>';
+      return;
+    }
+    section.style.display = 'block';
+    section.innerHTML = '<div class="loading">空き状況を確認しています…</div>';
+    apiGet('availability', { date: selectedDateKey, duration: dur }, function (res) {
+      renderResult(res, dur);
+    });
+  });
+
+  function renderResult(res, dur) {
+    var section = document.getElementById('resultSection');
+    var comment = document.getElementById('comment').value.trim();
+    var commentHtml = comment ? '<div class="empty-note" style="background:var(--sunken); border-radius:7px; padding:9px 10px;"><strong style="color:var(--text)">ご要望：</strong>'+comment.replace(/</g,'&lt;')+'</div>' : '';
+
+    if (res.closed) {
+      section.innerHTML = '<div class="status-hero ng"><div class="mark">✕</div><div class="msg">この日は定休日です</div></div>' + commentHtml;
+      return;
+    }
+    if (res.candidates.length === 0) {
+      section.innerHTML = '<div class="status-hero ng"><div class="mark">✕</div><div class="msg">ご希望メニュー（'+fmtDur(dur)+'）の空きがありません</div><div class="sub">他の日をお試しください</div></div>' + commentHtml;
+      return;
+    }
+
+    var html = '<div class="status-hero ok"><div class="mark">○</div><div class="msg">ご案内できる時間があります</div>' +
+      '<div class="sub">おすすめは <strong class="tabular">'+res.bestStartHHMM+'</strong> です</div></div>' + commentHtml +
+      '<div class="eyebrow" style="margin-top:6px;">ご案内可能な時間（タップして選択）</div><div class="slot-grid">';
+    res.candidates.forEach(function (c) {
+      html += '<div class="slot-btn '+(c.isBest?'best':'')+'" data-start="'+c.start+'" data-end="'+c.endHHMM+'">'+c.startHHMM+(c.isBest?'<span class="tag">おすすめ</span>':'')+'</div>';
+    });
+    html += '</div>';
+    html += '<label class="field" style="margin-top:8px;">お名前<input type="text" id="custName" value="'+(lineProfile?lineProfile.displayName:'')+'" placeholder="お名前"></label>';
+    html += '<button class="primary" id="confirmBtn" disabled>時間を選んでください</button>';
+    html += '<div class="empty-note" id="submitNote" style="display:none;"></div>';
+    section.innerHTML = html;
+
+    var duration = dur;
+    section.querySelectorAll('.slot-btn').forEach(function (el) {
+      el.addEventListener('click', function () {
+        section.querySelectorAll('.slot-btn').forEach(function(x){x.classList.remove('selected');});
+        el.classList.add('selected');
+        selectedSlot = { start: Number(el.dataset.start), endHHMM: el.dataset.end, startHHMM: el.textContent.replace('おすすめ','').trim() };
+        var btn = document.getElementById('confirmBtn');
+        btn.disabled = false;
+        btn.textContent = selectedSlot.startHHMM + ' で予約する';
+      });
+    });
+
+    document.getElementById('confirmBtn').addEventListener('click', function () {
+      if (!selectedSlot) return;
+      var nameVal = document.getElementById('custName').value.trim();
+      if (!nameVal) {
+        alert('お名前を入力してください');
+        return;
+      }
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = '送信中…';
+      var payload = {
+        date: selectedDateKey,
+        startMin: selectedSlot.start,
+        durationMin: duration,
+        menuNames: Array.from(selectedMenu),
+        name: document.getElementById('custName').value,
+        lineUserId: lineProfile ? lineProfile.userId : '',
+        channel: 'LINE',
+        comment: comment
+      };
+      apiPost(payload, function (r) {
+        var note = document.getElementById('submitNote');
+        note.style.display = 'block';
+        note.textContent = 'ご予約ありがとうございます。' + r.startHHMM + '〜' + r.endHHMM + ' で確定しました。';
+        btn.textContent = '予約済み';
+      }, function (err) {
+        btn.disabled = false;
+        btn.textContent = '再送信する';
+        alert('送信に失敗しました: ' + err);
+      });
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
