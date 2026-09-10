@@ -42,6 +42,8 @@
   .selected-date-status strong { font-size: 14px; }
   .selected-date-actions { display: flex; gap: 6px; }
   .selected-date-actions button { padding: 7px 9px; font-size: 12px; }
+  .booking-header-actions { display: flex; align-items: center; gap: 7px; }
+  .booking-header-actions button { min-height: 42px; }
   .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); }
   .note { font-size: 12.5px; color: var(--text-muted); }
 
@@ -221,7 +223,10 @@
     <section class="card">
       <div class="row" style="justify-content:space-between;">
         <div class="eyebrow">予約確認</div>
-        <button class="secondary" id="mbOpenBtnTop">＋ 予約を追加</button>
+        <div class="booking-header-actions">
+          <button class="secondary" id="goTodayBtn" type="button">本日</button>
+          <button class="secondary" id="mbOpenBtnTop">＋ 予約を追加</button>
+        </div>
       </div>
       <div class="note">「確定」を押すと、LINEでご予約されたお客様には自動で確定連絡が届きます。日付の数字バッジは、その日の予約件数です。</div>
       <div id="hpbReviewPanel"></div>
@@ -1157,6 +1162,9 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
   });
   document.getElementById('showBookingListBtn').addEventListener('click', function () {
     document.getElementById('bookingListCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  document.getElementById('goTodayBtn').addEventListener('click', function () {
+    selectBookingDate(dateKeyLocal(new Date()), false);
   });
 
   function renderBookingCalendar() {
