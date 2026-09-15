@@ -364,7 +364,6 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
     }
     // APIの応答を待たず、日付とメニューをすぐ操作できる状態にする。
     onSettingsLoaded(FALLBACK_SETTINGS);
-    // 最も利用頻度の高い60分メニューは画面表示中に先読みする。
     prefetchSummary(60);
     prefetchAvailability(selectedDateKey, 60);
     apiGet('settings', {}, onSettingsLoaded, function () {

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<title>SENN 予約確認</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #efefea; --surface: #ffffff; --sunken: #e4e2db; --sunken-line: #d0cdc2;
+    --text: #26251f; --text-muted: #85837a; --border: #d6d3c9;
+    --accent: #a9895a; --accent-text: #2a1f0f;
+    --good: #4f6a58; --good-bg: #e4ebe4; --good-border: #b9ccb9;
+    --warn: #a24f34; --warn-bg: #f3e3dc; --warn-border: #ddb7a5;
+    --radius: 10px; --shadow: 0 1px 2px rgba(38,37,31,0.06), 0 4px 14px rgba(38,37,31,0.05);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+    font-size: 16px; line-height: 1.55;
+  }
+  .tabular { font-variant-numeric: tabular-nums; }
+  .page { max-width: 520px; margin: 0 auto; padding: 0 0 32px; display: flex; flex-direction: column; background: var(--surface); }
+  header.top { padding: 14px 16px 12px; background: var(--surface); }
+  header.top .brand { font-size: 13px; letter-spacing: 0.14em; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+  header.top h1 { font-size: 18px; margin: 2px 0 0; font-weight: 700; }
+  section.card { background: var(--surface); border: none; border-top: 8px solid var(--bg); border-radius: 0; box-shadow: none; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); }
+  .booking-card { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--good-border); background: var(--good-bg); }
+  .booking-card.pending { border-color: var(--warn-border); background: var(--warn-bg); }
+  .status-badge { display: inline-block; align-self: flex-start; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--warn); color: #fff; }
+  .booking-card .date { font-size: 13px; color: var(--text-muted); }
+  .booking-card .time { font-size: 24px; font-weight: 800; color: var(--text); }
+  .booking-card .menu { font-size: 14.5px; color: var(--text); }
+  .empty-note { font-size: 14px; color: var(--text-muted); padding: 6px 2px; text-align: center; }
+  .loading { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+  button.primary { font: inherit; background: var(--accent); color: var(--accent-text); font-weight: 700; font-size: 15px; padding: 13px 16px; border: none; border-radius: 7px; width: 100%; cursor: pointer; }
+  .debug { font-size: 11px; color: #999; padding: 8px; word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <div class="brand">SENN</div>
+    <h1>ご予約確認</h1>
+  </header>
+
+  <section class="card" id="mainSection">
+    <div class="loading">確認しています…</div>
+  </section>
+
+  <div class="debug" id="debugBox"></div>
+</div>
+
+<script>window.LIFF_ID = "2011000948-g2fSsa55";</script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+(function () {
+var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHGeaykmFgxM1QF9UVEWCQkut9pO5kf3by725b5AMG8OP3/exec";
+
+  function debugLog(msg) {
+    var box = document.getElementById('debugBox');
+    if (box) box.textContent += msg + ' / ';
+  }
+
+  function fmtDateJp(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    var dow = ["日","月","火","水","木","金","土"][d.getDay()];
+    return (d.getMonth()+1) + "月" + d.getDate() + "日(" + dow + ")";
+  }
+
+  function showNoProfile() {
+    document.getElementById('mainSection').innerHTML =
+      '<div class="empty-note">LINEアプリ内でこのページを開くと、ご自身の予約状況を確認できます。</div>';
+  }
+
+  function showBookings(data) {
+    var section = document.getElementById('mainSection');
+    if (!data.bookings || data.bookings.length === 0) {
+      section.innerHTML = '<div class="empty-note">現在、確認できるご予約はありません。</div>';
+      return;
+    }
+    var html = '';
+    data.bookings.forEach(function (b) {
+      var pending = b.status === 'リクエスト中';
+      html += '<div class="booking-card' + (pending ? ' pending' : '') + '">' +
+        (pending ? '<div class="status-badge">確認中（店舗からの確定連絡をお待ちください）</div>' : '') +
+        '<div class="date">' + fmtDateJp(b.date) + '</div>' +
+        '<div class="time tabular">' + b.startHHMM + ' 〜 ' + b.endHHMM + '</div>' +
+        '<div class="menu">メニュー：' + b.menu + '</div>' +
+        '</div>';
+    });
+    section.innerHTML = html;
+  }
+
+  function fetchBookings(userId) {
+    fetch(API_BASE + '?action=myBookings&userId=' + encodeURIComponent(userId))
+      .then(function (r) { return r.json(); })
+      .then(showBookings)
+      .catch(function (err) {
+        debugLog('fetch error: ' + err);
+        document.getElementById('mainSection').innerHTML = '<div class="empty-note">読み込みに失敗しました。時間をおいて再度お試しください。</div>';
+      });
+  }
+
+  function init() {
+    if (typeof liff === 'undefined' || !window.LIFF_ID) {
+      showNoProfile();
+      return;
+    }
+    liff.init({ liffId: window.LIFF_ID }).then(function () {
+      if (liff.isLoggedIn()) {
+        liff.getProfile().then(function (profile) {
+          fetchBookings(profile.userId);
+        }).catch(function (err) {
+          debugLog('getProfile error: ' + JSON.stringify(err));
+          showNoProfile();
+        });
+      } else {
+        liff.login();
+      }
+    }).catch(function (err) {
+      debugLog('LIFF init error: ' + JSON.stringify(err));
+      showNoProfile();
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

@@ -84,6 +84,7 @@
   .date-item .label { color: var(--text-muted); font-size: 12.5px; display: block; margin-top: 2px; }
 
   .booking-item { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: var(--radius); background: var(--sunken); border: 1px solid var(--sunken-line); }
+  .booking-item.blocked { background: #e4e4e1; border-color: #aaa9a4; }
   .booking-item .top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
   .booking-item .datetime { font-weight: 700; font-size: 15px; }
   .booking-item .sub { font-size: 13px; color: var(--text-muted); }
@@ -96,11 +97,13 @@
   .schedule-booking { position: absolute; height: 42px; padding: 5px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border: 1px solid #d2a949; border-radius: 4px; background: #fff2cd; color: #3d3528; font-size: 12px; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.08); cursor: pointer; }
   .schedule-booking.pending { background: var(--warn-bg); border-color: var(--warn-border); }
   .schedule-booking.blocked { background: #8d8d8b; border-color: #777; color: #fff; }
+  .schedule-booking.sb-holding { background: #dce9f0; border-color: #7799a8; color: #24475a; }
   .schedule-now { position: absolute; top: 0; bottom: 0; width: 2px; background: #ef7469; z-index: 3; pointer-events: none; }
   .schedule-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: var(--text-muted); }
   .schedule-legend span::before { content: ''; display: inline-block; width: 11px; height: 11px; margin-right: 4px; vertical-align: -1px; border-radius: 2px; background: #fff2cd; border: 1px solid #d2a949; }
   .schedule-legend .pending::before { background: var(--warn-bg); border-color: var(--warn-border); }
   .schedule-legend .blocked::before { background: #8d8d8b; border-color: #777; }
+  .schedule-legend .sb-holding::before { background: #dce9f0; border-color: #7799a8; }
   .schedule-legend .unchecked::before { background: repeating-linear-gradient(135deg, #f1f0ec 0, #f1f0ec 5px, #d6d4cd 5px, #d6d4cd 8px); border-color: #aaa; }
   .schedule-caution { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--warn-border); border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: 12px; font-weight: 700; }
   .schedule-caution a { flex: 0 0 auto; color: var(--warn); background: #fff; border: 1px solid var(--warn-border); border-radius: 6px; padding: 7px 9px; text-decoration: none; white-space: nowrap; }
@@ -109,6 +112,7 @@
   .status-badge.confirmed { background: var(--good-bg); color: var(--good); }
   .status-badge.sb-missing { background: #ffe1df; color: #a22b22; border: 1px solid #efaaa4; }
   .status-badge.sb-done { background: var(--good-bg); color: var(--good); }
+  .status-badge.sb-holding { background: #dce9f0; color: #24475a; }
   .sb-alert { margin-top: 12px; padding: 13px; border-radius: var(--radius); background: #fff1f0; border: 2px solid #e68078; }
   .sb-alert.ok { background: var(--good-bg); border-color: var(--good-border); }
   .sb-alert-title { font-size: 15px; font-weight: 800; color: #9b2c24; }
@@ -151,6 +155,11 @@
   .chip.checked { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
   .chip.checked .dur { color: var(--accent-text); opacity: 0.75; }
   .duration-readout { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-muted); }
+  .entry-kind { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .entry-kind button { min-height: 48px; padding: 7px 5px; font: inherit; font-size: 13px; font-weight: 700; color: var(--text); background: var(--sunken); border: 1px solid var(--sunken-line); border-radius: 8px; cursor: pointer; }
+  .entry-kind button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  .mb-mode-fields { display: flex; flex-direction: column; gap: 12px; }
+  [hidden] { display: none !important; }
 
   .cal-nav { display: flex; align-items: center; justify-content: space-between; }
   .cal-nav button { font: inherit; background: var(--sunken); border: 1px solid var(--sunken-line); color: var(--text); border-radius: 7px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
@@ -228,8 +237,9 @@
           <button class="secondary" id="mbOpenBtnTop">＋ 予約を追加</button>
         </div>
       </div>
-      <div class="note">「確定」を押すと、LINEでご予約されたお客様には自動で確定連絡が届きます。日付の数字バッジは、その日の予約件数です。</div>
+      <div class="note">「＋ 予約を追加」から、お客様の予約・サロンボード登録済み・予定をまとめて登録できます。LINEの予約リクエストを「確定」にすると、お客様へ確定連絡が届きます。</div>
       <div id="hpbReviewPanel"></div>
+      <div id="officialChatReviewPanel"></div>
       <div id="salonBoardPendingPanel"></div>
       <div class="toast" id="bookingActionToast"></div>
       <div id="bookingCalendar"><div class="loading">読み込み中…</div></div>
@@ -243,8 +253,13 @@
     </section>
 
     <section class="card" id="manualBookingCard" style="display:none;">
-      <div class="eyebrow">予約を登録</div>
+      <div class="eyebrow">予約・予定を登録</div>
       <div class="note" id="manualBookingTarget"></div>
+      <div class="entry-kind" role="group" aria-label="登録する内容" id="mbKindPicker">
+        <button type="button" data-mb-kind="booking" class="active" aria-pressed="true">お客様の予約</button>
+        <button type="button" data-mb-kind="salonboard" aria-pressed="false">サロンボード登録済み</button>
+        <button type="button" data-mb-kind="block" aria-pressed="false">予定・時間ブロック</button>
+      </div>
       <div class="field"><div>日付</div>
         <div class="big-date-summary" id="mbDateSummary">日付を選んでください</div>
         <div class="big-cal" id="mbDatePicker"></div>
@@ -252,22 +267,39 @@
       <label class="field">開始時刻
         <div class="time-chip-row" id="mbStartChips"></div>
       </label>
-      <label class="field">メニュー
-        <div class="chips" id="mbMenuChips"></div>
-      </label>
-      <label class="field">施術時間（30分単位で変更できます）
-        <select id="mbDurationSelect"></select>
-      </label>
-      <div class="duration-readout"><span>登録する時間</span><strong class="tabular" id="mbDurationReadout">0分</strong></div>
-      <label class="field">お名前
-        <input type="text" id="mbName">
-      </label>
-      <label class="field">お電話番号（任意）
-        <input type="text" id="mbPhone">
-      </label>
-      <label class="field">コメント（任意）
-        <input type="text" id="mbComment">
-      </label>
+      <div class="mb-mode-fields" id="mbBookingFields">
+        <label class="field">メニュー
+          <div class="chips" id="mbMenuChips"></div>
+        </label>
+        <label class="field">施術時間（30分単位で変更できます）
+          <select id="mbDurationSelect"></select>
+        </label>
+        <div class="duration-readout"><span>登録する時間</span><strong class="tabular" id="mbDurationReadout">0分</strong></div>
+        <label class="field">お名前
+          <input type="text" id="mbName">
+        </label>
+        <label class="field">お電話番号（任意）
+          <input type="text" id="mbPhone">
+        </label>
+        <label class="field">コメント（任意）
+          <input type="text" id="mbComment">
+        </label>
+      </div>
+      <div class="mb-mode-fields" id="mbEndFields" hidden>
+        <label class="field">終了時刻
+          <div class="time-chip-row" id="mbEndChips"></div>
+        </label>
+        <div class="duration-readout"><span>埋める時間</span><strong class="tabular" id="mbRangeReadout">10:00〜11:00</strong></div>
+      </div>
+      <div class="mb-mode-fields" id="mbSalonBoardFields" hidden>
+        <div class="note">サロンボードに入力済みの予約をLINEの空き時間にも反映します。お名前・予約番号は分かれば入力してください。</div>
+        <label class="field">お名前（任意）<input type="text" id="mbSbName" autocomplete="off"></label>
+        <label class="field">サロンボード予約番号（任意）<input type="text" id="mbSbNumber" autocomplete="off"></label>
+      </div>
+      <div class="mb-mode-fields" id="mbBlockFields" hidden>
+        <div class="note">休憩や私用など、お客様の予約ではない時間を閉じます。</div>
+        <label class="field">予定の内容（任意）<input type="text" id="mbBlockLabel" placeholder="例：私用のため"></label>
+      </div>
       <div class="row" style="gap:8px;">
         <button class="primary" id="mbSaveBtn" style="flex:1;">この内容で登録</button>
         <button class="secondary" id="mbCancelBtn">閉じる</button>
@@ -280,7 +312,7 @@
       <div class="schedule-caution"><span>斜線部分は「空き」ではなく、サロンボード予定が未確認です。</span><a href="https://salonboard.com/CLP/bt/schedule/salonSchedule/" target="_blank">サロンボードを開く</a></div>
       <div class="note">予約枠を押すと、下の詳しい予約まで移動します。スマホでは表を横に動かせます。</div>
       <div id="scheduleArea"></div>
-      <div class="schedule-legend"><span>確定予約</span><span class="pending">確認中</span><span class="blocked">登録済み時間ブロック</span><span class="unchecked">サロンボード未確認</span></div>
+      <div class="schedule-legend"><span>確定予約</span><span class="pending">確認中</span><span class="sb-holding">サロンボード仮反映</span><span class="blocked">予定・時間ブロック</span><span class="unchecked">サロンボード未確認</span></div>
     </section>
 
     <section class="card" id="bookingListCard">
@@ -684,9 +716,9 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
       result.className = 'csv-result';
       result.innerHTML = '<strong>照合が完了しました</strong>' +
         '<div class="csv-counts"><span>新規追加 ' + r.added + '件</span><span>日時等を更新 ' + r.updated + '件</span>' +
-        '<span>LINE・店頭と紐付け ' + r.linked + '件</span><span>変更なし ' + r.unchanged + '件</span>' +
+        '<span>既存予約・仮反映と紐付け ' + r.linked + '件</span><span>変更なし ' + r.unchanged + '件</span>' +
         '<span>キャンセル反映 ' + r.canceled + '件</span><span>除外 ' + r.skipped + '件</span></div>' +
-        (r.warnings && r.warnings.length ? '<br>' + r.warnings.join('<br>') : '');
+        (r.warnings && r.warnings.length ? '<br>' + r.warnings.map(escHtml).join('<br>') : '');
       loadBookings();
     }, function () {
       btn.disabled = false;
@@ -831,6 +863,26 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
     });
   }
 
+  function renderOfficialChatReviewPanel() {
+    var panel = document.getElementById('officialChatReviewPanel');
+    var missing = allBookings.filter(function (b) {
+      return b.status === 'リクエスト中' && (b.officialChatStatus === '未送信' || b.officialChatStatus === '未確認');
+    });
+    if (!missing.length) { panel.innerHTML = ''; return; }
+    panel.innerHTML = '<div class="sb-alert"><div class="sb-alert-title">公式LINEトークへの送信未確認 ' + missing.length + '件</div>' +
+      '<div class="note">予約は管理画面に保存済みです。個人LINEの通知だけで終わっていないか、公式LINEのチャットを確認してください。</div>' +
+      missing.map(function (b) {
+        return '<div class="sb-alert-row"><span>' + escHtml(b.date + ' ' + b.startHHMM + '〜' + b.endHHMM + ' ' + (b.name || '氏名未入力')) +
+          '</span><button class="secondary" data-chat-review="' + escHtml(b.id) + '">予約を見る</button></div>';
+      }).join('') + '</div>';
+    panel.querySelectorAll('[data-chat-review]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var booking = findBooking(button.getAttribute('data-chat-review'));
+        if (booking) selectBookingDate(booking.date, true);
+      });
+    });
+  }
+
   function escHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
@@ -863,11 +915,13 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
     html += '</div><div class="schedule-lane" style="height:' + laneHeight + 'px">';
     items.forEach(function (item) {
       var b = item.booking;
-      var isBlocked = /ブロック|休憩|私用|受付停止/i.test([b.channel, b.menu, b.name].join(' '));
-      var cls = 'schedule-booking' + (isBlocked ? ' blocked' : (b.status === 'リクエスト中' ? ' pending' : ''));
+      var isBlocked = b.channel === 'BLOCK';
+      var isSbHolding = b.channel === 'サロンボード仮反映';
+      var cls = 'schedule-booking' + (isBlocked ? ' blocked' : (isSbHolding ? ' sb-holding' : (b.status === 'リクエスト中' ? ' pending' : '')));
       var left = (Math.max(item.start, startMin) - startMin) * pxPerMin;
       var width = Math.max(34, (Math.min(item.end, endMin) - Math.max(item.start, startMin)) * pxPerMin - 2);
-      var label = isBlocked ? (b.comment || b.menu || b.name || '時間ブロック') : ((b.name || '氏名未入力') + '　' + b.startHHMM + '〜' + b.endHHMM);
+      var label = isBlocked ? (b.comment || b.menu || b.name || '時間ブロック')
+        : (isSbHolding ? 'サロンボード仮反映　' : '') + (b.name || (isSbHolding ? '予約' : '氏名未入力')) + '　' + b.startHHMM + '〜' + b.endHHMM;
       html += '<div class="' + cls + '" data-schedule-id="' + escHtml(b.id) + '" style="left:' + left + 'px;top:' + (item.row * 48 + 8) + 'px;width:' + width + 'px" title="' + escHtml(label) + '">' + escHtml(label) + '</div>';
     });
     var now = new Date();
@@ -888,40 +942,50 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
     if (scroller && first) scroller.scrollLeft = Math.max(0, (first.start - startMin) * pxPerMin - 30);
   }
 
-  function renderBookingsList(bookings) {
+  function renderBookingsList(bookings, blocks) {
     var area = document.getElementById('bookingListArea');
-    if (!bookings || bookings.length === 0) {
-      area.innerHTML = '<div class="empty-note">この日の予約はありません。</div>';
+    if ((!bookings || bookings.length === 0) && (!blocks || blocks.length === 0)) {
+      area.innerHTML = '<div class="empty-note">この日の予約・予定はありません。</div>';
       return;
     }
     var html = '';
-    bookings.forEach(function (b) {
+    (bookings || []).forEach(function (b) {
       var pending = b.status === 'リクエスト中';
-      var sbBadge = b.salonBoardRegistered
+      var isSbHolding = b.channel === 'サロンボード仮反映';
+      var sbBadge = isSbHolding
+        ? '<span class="status-badge sb-holding">CSV照合待ち</span>'
+        : b.salonBoardRegistered
         ? '<span class="status-badge sb-done">サロンボード登録済み</span>'
         : (pending ? '<span class="status-badge pending">確定後にサロンボード登録</span>' : '<span class="status-badge sb-missing">サロンボード未登録</span>');
       html += '<div class="booking-item" data-booking-id="' + escHtml(b.id) + '">' +
         '<div class="top-row">' +
-        '<div><div class="datetime tabular">' + b.startHHMM + '〜' + b.endHHMM + '</div>' +
-        '<div class="sub">' + (b.name || '(氏名未入力)') + (b.phone ? ' / ' + b.phone : '') + '</div></div>' +
-        '<span class="status-badge ' + (pending ? 'pending' : 'confirmed') + '">' + b.status + '</span>' +
+        '<div><div class="datetime tabular">' + escHtml(b.startHHMM) + '〜' + escHtml(b.endHHMM) + '</div>' +
+        '<div class="sub">' + escHtml(b.name || (isSbHolding ? 'サロンボード予約' : '(氏名未入力)')) + (b.phone ? ' / ' + escHtml(b.phone) : '') + '</div></div>' +
+        '<span class="status-badge ' + (pending ? 'pending' : 'confirmed') + '">' + (isSbHolding ? '仮反映' : escHtml(b.status)) + '</span>' +
         '</div>' +
-        '<div class="sub">メニュー：' + (b.menu || '') + '　経路：' + (b.channel || '') + '</div>' +
+        '<div class="sub">メニュー：' + escHtml(b.menu || '') + '　経路：' + escHtml(b.channel || '') + '</div>' +
         '<div>' + sbBadge + '</div>' +
-        (b.comment ? '<div class="sub">コメント：' + b.comment + '</div>' : '') +
+        (b.comment ? '<div class="sub">コメント：' + escHtml(b.comment) + '</div>' : '') +
         '<div class="actions">' +
-        (pending ? '<button class="confirm" data-id="' + b.id + '" data-act="confirm">確定にする</button>' : '') +
-        (!pending && !b.salonBoardRegistered ? '<button class="copy-sb" data-copy-sb="' + b.id + '">サロンボード入力用にコピー</button><button class="confirm" data-sb-done="' + b.id + '">登録済みにする</button>' : '') +
-        (!pending && b.salonBoardRegistered && !/HHB|HOT|ホットペッパー|サロンボード/i.test(String(b.channel || '')) ? '<button class="secondary" data-sb-undone="' + b.id + '">未登録に戻す</button>' : '') +
-        '<button class="remove" data-id="' + b.id + '" data-act="cancel">キャンセル</button>' +
-        '<button class="secondary" data-mb-name="' + (b.name || '') + '" data-mb-phone="' + (b.phone || '') + '" data-mb-line-id="' + (b.lineUserId || '') + '">次回予約を追加</button>' +
+        (pending ? '<button class="confirm" data-id="' + escHtml(b.id) + '" data-act="confirm">確定にする</button>' : '') +
+        (!pending && !b.salonBoardRegistered ? '<button class="copy-sb" data-copy-sb="' + escHtml(b.id) + '">サロンボード入力用にコピー</button><button class="confirm" data-sb-done="' + escHtml(b.id) + '">登録済みにする</button>' : '') +
+        (!pending && b.salonBoardRegistered && !/HHB|HOT|ホットペッパー|サロンボード/i.test(String(b.channel || '')) ? '<button class="secondary" data-sb-undone="' + escHtml(b.id) + '">未登録に戻す</button>' : '') +
+        '<button class="remove" data-id="' + escHtml(b.id) + '" data-act="cancel">' + (isSbHolding ? '仮反映を解除' : 'キャンセル') + '</button>' +
+        (!isSbHolding ? '<button class="secondary" data-mb-name="' + escHtml(b.name || '') + '" data-mb-phone="' + escHtml(b.phone || '') + '" data-mb-line-id="' + escHtml(b.lineUserId || '') + '">次回予約を追加</button>' : '') +
         '</div>' +
-        (b.hasLineUser ?
+        (b.hasLineUser && !isSbHolding ?
           '<div class="next-visit-row">' +
-          '<input type="text" placeholder="次回のおすすめメモ（例：カラーチェンジ トリートメント）" data-note-line-id="' + b.lineUserId + '" data-note-name="' + (b.name || '') + '">' +
-          '<button class="secondary" data-save-note="' + b.lineUserId + '">保存</button>' +
+          '<input type="text" placeholder="次回のおすすめメモ（例：カラーチェンジ トリートメント）" data-note-line-id="' + escHtml(b.lineUserId) + '" data-note-name="' + escHtml(b.name || '') + '">' +
+          '<button class="secondary" data-save-note="' + escHtml(b.lineUserId) + '">保存</button>' +
           '</div>' : '') +
         '</div>';
+    });
+    (blocks || []).forEach(function (b) {
+      html += '<div class="booking-item blocked" data-booking-id="' + escHtml(b.id) + '">' +
+        '<div class="top-row"><strong class="datetime tabular">' + escHtml(b.startHHMM) + '〜' + escHtml(b.endHHMM) +
+        '</strong><span class="status-badge">予定・時間ブロック</span></div>' +
+        '<div class="sub">' + escHtml(b.comment || b.menu || '予定') + '</div>' +
+        '<div class="actions"><button class="remove" data-block-cancel="' + escHtml(b.id) + '">ブロックを解除</button></div></div>';
     });
     area.innerHTML = html;
     area.querySelectorAll('button[data-copy-sb]').forEach(function (btn) {
@@ -944,7 +1008,11 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
       btn.addEventListener('click', function () {
         var id = btn.getAttribute('data-id');
         var act = btn.getAttribute('data-act');
-        if (act === 'cancel' && !confirm('この予約をキャンセルにしますか？')) return;
+        var item = findBooking(id);
+        var prompt = item && item.channel === 'サロンボード仮反映'
+          ? 'サロンボード側の予約は残ります。予約が取り消し・変更済みであることを確認してから、仮反映を解除しますか？'
+          : 'この予約をキャンセルにしますか？';
+        if (act === 'cancel' && !confirm(prompt)) return;
         btn.disabled = true;
         apiPost({ action: act === 'confirm' ? 'confirmBooking' : 'cancelBooking', id: id }, function (r) {
           if (r.ok) {
@@ -997,11 +1065,24 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
         });
       });
     });
+    area.querySelectorAll('button[data-block-cancel]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('この時間ブロックを解除しますか？')) return;
+        btn.disabled = true;
+        apiPost({ action: 'cancelTimeBlock', id: btn.getAttribute('data-block-cancel') }, function (r) {
+          if (!r.ok) { showToast(r.message || '解除できませんでした', false, 'bookingActionToast'); btn.disabled = false; return; }
+          loadBookings();
+          loadBlockList();
+        }, function () { showToast('通信エラーが発生しました', false, 'bookingActionToast'); btn.disabled = false; });
+      });
+    });
   }
 
-  /* ---------- 次回予約フォーム ---------- */
+  /* ---------- 予約・サロンボード・予定の共通登録フォーム ---------- */
   var menuListCache = null;
   var mbStartVal = '10:00';
+  var mbEndVal = '11:00';
+  var mbKind = 'booking';
   var mbSelectedMenu = {};
   var mbDurationVal = 0;
 
@@ -1050,31 +1131,63 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
   }
 
   function renderMbTimeChips() {
-    renderTimeChips('mbStartChips', mbStartVal, function (t) { mbStartVal = t; renderMbTimeChips(); });
+    renderTimeChips('mbStartChips', mbStartVal, function (t) {
+      mbStartVal = t;
+      if (toMinLocal(mbEndVal) <= toMinLocal(t)) {
+        mbEndVal = timeOptionList().find(function (candidate) { return toMinLocal(candidate) > toMinLocal(t); }) || mbEndVal;
+      }
+      renderMbTimeChips();
+    });
+    renderTimeChips('mbEndChips', mbEndVal, function (t) { mbEndVal = t; renderMbTimeChips(); });
+    document.getElementById('mbRangeReadout').textContent = mbStartVal + '〜' + mbEndVal;
   }
 
   var mbDatePicker = null;
-  function openManualBookingForm(prefill) {
+  function setMbKind(kind) {
+    mbKind = kind;
+    document.querySelectorAll('#mbKindPicker [data-mb-kind]').forEach(function (button) {
+      var active = button.getAttribute('data-mb-kind') === kind;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    document.getElementById('mbBookingFields').hidden = kind !== 'booking';
+    document.getElementById('mbEndFields').hidden = kind === 'booking';
+    document.getElementById('mbSalonBoardFields').hidden = kind !== 'salonboard';
+    document.getElementById('mbBlockFields').hidden = kind !== 'block';
+    document.getElementById('mbSaveBtn').textContent = kind === 'block' ? 'この時間をブロック' : 'この内容で登録';
+    document.getElementById('manualBookingTarget').textContent = kind === 'salonboard'
+      ? 'サロンボードに入力済みの予約を、LINEの空き状況にもすぐ反映します。'
+      : kind === 'block'
+      ? '休憩や私用などの時間を、予約できない時間として反映します。'
+      : (document.getElementById('manualBookingCard').dataset.lineUserId
+        ? (document.getElementById('mbName').value || 'このお客様') + ' の次回予約を登録します。'
+        : 'お客様から受けた予約を登録します。');
+    if (kind === 'booking') ensureMenuList(function () { renderMbMenuChips(); });
+  }
+  document.querySelectorAll('#mbKindPicker [data-mb-kind]').forEach(function (button) {
+    button.addEventListener('click', function () { setMbKind(button.getAttribute('data-mb-kind')); });
+  });
+
+  function openManualBookingForm(prefill, kind) {
     document.getElementById('manualBookingCard').style.display = 'flex';
     document.getElementById('mbName').value = (prefill && prefill.name) || '';
     document.getElementById('mbPhone').value = (prefill && prefill.phone) || '';
     document.getElementById('mbComment').value = '';
+    document.getElementById('mbSbName').value = '';
+    document.getElementById('mbSbNumber').value = '';
+    document.getElementById('mbBlockLabel').value = '';
     if (mbDatePicker) {
       mbDatePicker.setValue(selectedBookingDate || null);
     } else {
       mbDatePicker = makeBigDatePicker('mbDatePicker', 'mbDateSummary', selectedBookingDate || null, null);
     }
-    document.getElementById('manualBookingTarget').textContent = (prefill && prefill.lineUserId)
-      ? ((prefill.name || 'このお客様') + ' の次回のご予約を登録します。')
-      : '新しく次回予約を登録します。';
     document.getElementById('manualBookingCard').dataset.lineUserId = (prefill && prefill.lineUserId) || '';
     mbSelectedMenu = {};
     mbDurationVal = 0;
     mbStartVal = '10:00';
-    ensureMenuList(function () {
-      renderMbMenuChips();
-      renderMbTimeChips();
-    });
+    mbEndVal = '11:00';
+    renderMbTimeChips();
+    setMbKind(kind || 'booking');
     document.getElementById('manualBookingCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -1089,43 +1202,60 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
   });
   document.getElementById('mbSaveBtn').addEventListener('click', function () {
     var dateStr = mbDatePicker ? mbDatePicker.getValue() : null;
-    var name = document.getElementById('mbName').value.trim();
-    var menuNames = Object.keys(mbSelectedMenu);
-    var duration = mbDurationVal;
-
     if (!dateStr) { showToast('日付を選んでください', false, 'mbToast'); return; }
-    if (menuNames.length === 0) { showToast('メニューを選んでください', false, 'mbToast'); return; }
-    if (!duration) { showToast('施術時間を選んでください', false, 'mbToast'); return; }
-    if (!name) { showToast('お名前を入力してください', false, 'mbToast'); return; }
+    var startMin = toMinLocal(mbStartVal);
+    var payload;
+    if (mbKind === 'booking') {
+      var name = document.getElementById('mbName').value.trim();
+      var menuNames = Object.keys(mbSelectedMenu);
+      if (menuNames.length === 0) { showToast('メニューを選んでください', false, 'mbToast'); return; }
+      if (!mbDurationVal) { showToast('施術時間を選んでください', false, 'mbToast'); return; }
+      if (!name) { showToast('お名前を入力してください', false, 'mbToast'); return; }
+      payload = {
+        action: 'addManualBooking', date: dateStr, startMin: startMin,
+        durationMin: mbDurationVal, menuNames: menuNames, name: name,
+        phone: document.getElementById('mbPhone').value.trim(),
+        lineUserId: document.getElementById('manualBookingCard').dataset.lineUserId || '',
+        comment: document.getElementById('mbComment').value.trim()
+      };
+    } else {
+      var endMin = toMinLocal(mbEndVal);
+      if (endMin <= startMin) { showToast('終了時刻は開始時刻より後にしてください', false, 'mbToast'); return; }
+      payload = mbKind === 'salonboard'
+        ? { action: 'addSalonBoardHolding', date: dateStr, startMin: startMin, endMin: endMin,
+            name: document.getElementById('mbSbName').value.trim(),
+            reservationNo: document.getElementById('mbSbNumber').value.trim() }
+        : { action: 'addTimeBlock', date: dateStr, startMin: startMin, endMin: endMin,
+            label: document.getElementById('mbBlockLabel').value.trim() };
+    }
 
     var btn = this;
     btn.disabled = true;
     btn.textContent = '登録中…';
-    apiPost({
-      action: 'addManualBooking',
-      date: dateStr,
-      startMin: toMinLocal(mbStartVal),
-      durationMin: duration,
-      menuNames: menuNames,
-      name: name,
-      phone: document.getElementById('mbPhone').value.trim(),
-      lineUserId: document.getElementById('manualBookingCard').dataset.lineUserId || '',
-      comment: document.getElementById('mbComment').value.trim()
-    }, function (r) {
+    apiPost(payload, function (r) {
       btn.disabled = false;
-      btn.textContent = 'この内容で登録';
+      btn.textContent = mbKind === 'block' ? 'この時間をブロック' : 'この内容で登録';
       if (r.ok) {
+        if (r.alreadyRegistered) {
+          showToast(r.message || 'この予約は既に登録されています', false, 'mbToast');
+          return;
+        }
         selectedBookingDate = dateStr;
         showToast(fmtLabel(dateStr) + ' ' + r.startHHMM + '〜' + r.endHHMM + 'で登録しました', true, 'bookingActionToast');
         document.getElementById('manualBookingCard').style.display = 'none';
         loadBookings();
+        if (mbKind === 'block') loadBlockList();
+        if (r.overlaps && r.overlaps.length) {
+          var details = r.overlaps.map(function (b) { return b.startHHMM + '〜' + b.endHHMM + ' ' + (b.name || '登録済み予約'); }).join('\n');
+          window.alert('【重複に注意】サロンボードの予約時間を反映しましたが、管理画面には同じ時間帯の予約もあります。\n' + details + '\nサロンボードとLINEの予約内容を確認してください。');
+        }
       } else {
         showToast(r.message || '登録に失敗しました', false, 'mbToast');
         showToast(r.message || '登録に失敗しました', false, 'bookingActionToast');
       }
     }, function () {
       btn.disabled = false;
-      btn.textContent = 'この内容で登録';
+      btn.textContent = mbKind === 'block' ? 'この時間をブロック' : 'この内容で登録';
       showToast('通信エラーが発生しました', false, 'mbToast');
       showToast('通信エラーが発生しました', false, 'bookingActionToast');
     });
@@ -1139,11 +1269,12 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
     document.getElementById('bookingListTitle').textContent = fmtLabel(dateStr) + '(' + DOW[d.getDay()] + ')の予約';
     var selectedBookings = bookingsByDate[dateStr] || [];
     document.getElementById('bookingDateStatus').style.display = 'flex';
+    var selectedBlocks = timeBlocksByDate[dateStr] || [];
     document.getElementById('bookingDateStatusText').textContent =
-      fmtLabel(dateStr) + '(' + DOW[d.getDay()] + ')　予約' + selectedBookings.length + '件';
-    var scheduleItems = selectedBookings.concat(timeBlocksByDate[dateStr] || []);
+      fmtLabel(dateStr) + '(' + DOW[d.getDay()] + ')　予約' + selectedBookings.length + '件・予定' + selectedBlocks.length + '件';
+    var scheduleItems = selectedBookings.concat(selectedBlocks);
     renderSchedule(scheduleItems, dateStr);
-    renderBookingsList(selectedBookings);
+    renderBookingsList(selectedBookings, selectedBlocks);
     renderBookingCalendar();
     if (shouldScroll) {
       document.getElementById('manualBookingCard').style.display = 'none';
@@ -1193,7 +1324,8 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
       var blockCount = (timeBlocksByDate[key] || []).length;
       var cls = 'cal-cell' + (key === todayStr ? ' today' : '') + (key === selectedBookingDate ? ' active' : '');
       html += '<div class="' + cls + '" data-date="' + key + '"><span class="d">' + day + '</span>' +
-        (count ? '<span class="cnt">' + count + '</span>' : (blockCount ? '<span class="cnt">予定</span>' : '')) + '</div>';
+        (count ? '<span class="cnt">' + count + '</span>' : '') +
+        (blockCount ? '<span class="cnt">予定</span>' : '') + '</div>';
     }
     html += '</div>';
     area.innerHTML = html;
@@ -1219,6 +1351,7 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
     apiGet('adminBookings', {}, function (r) {
       if (r.error === 'auth') { showToast(r.message, false); return; }
       allBookings = r.bookings || [];
+      renderOfficialChatReviewPanel();
       bookingsByDate = {};
       allBookings.forEach(function (b) {
         if (!bookingsByDate[b.date]) bookingsByDate[b.date] = [];
@@ -1370,6 +1503,7 @@ var API_BASE = "https://script.google.com/macros/s/AKfycbxptPE5Z0ajsSiAXfyCoPHHG
       list.push((h < 10 ? '0' + h : '' + h) + ':00');
       if (h < 21) list.push((h < 10 ? '0' + h : '' + h) + ':30');
     }
+    list.push('21:30');
     return list; // 07:00 〜 21:30
   }
   function renderTimeChips(containerId, selected, onChange) {
